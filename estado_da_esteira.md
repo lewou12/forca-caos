@@ -13,7 +13,7 @@
 | 3 — Arquitetura & Código | Engenheiro Veterano | ✅ Concluída | Frontend + Functions + D1 |
 | 4 — QA & Automação | QA Implacável | ✅ Concluída | 49 testes + smoke + workflows |
 | 5 — Segurança | Analista Paranoico | ✅ Concluída | Auditoria + patches |
-| 6 — DevOps | Mestre Git/Cloudflare | 🔄 Em andamento | Push + deploy Pages |
+| 6 — DevOps | Mestre Git/Cloudflare | ⏳ Bloqueada (token CF) | Push + deploy Pages |
 
 ## Decisões-chave
 
@@ -64,6 +64,8 @@
 - 2026-11-05 — Fase 4 concluída: 49 testes unitários, 32 checagens de smoke e 39 verificações estáticas passando; fluxo completo validado no navegador (criar → entrar → jogar → 3 rodadas → pódio → revanche → sair).
 - 2026-11-05 — Fase 5 concluída: auditoria aplicada e vazamento de `lastAction` corrigido.
 - 2026-11-05 — Fase 6 em andamento: repositório, secrets e deploy.
+- 2026-11-05 — CI verde no GitHub Actions (run `42148034153`): 49/49 testes, 39/39 estáticos e 32/32 smoke, com Node 22 e D1 local.
+- 2026-11-05 — Deploy bloqueado: token `CLOUDFLARE_API_TOKEN` restrito por IP; runner do GitHub recebe `Authentication error [code: 10000]` e `Cannot use the access token from location: 20.84.158.26 [code: 9109]`. Aguardando token sem restrição de IP (permissões Pages Edit + D1 Edit).
 
 ## Riscos e mitigações
 
