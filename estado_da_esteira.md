@@ -70,6 +70,7 @@
 - 2026-11-05 — `wrangler.toml` deixou de versionar `database_id`; o binding `DB → forca-caos-db` é configurado no dashboard do Pages. `DEPLOY.md` documenta o passo a passo manual.
 - 2026-11-05 — Descoberta local: `wrangler pages dev --d1` exige `BINDING=DATABASE_ID`; usar o ID placeholder `00000000-…` mantém o banco local populado. `package.json` e `test.yml` atualizados.
 - 2026-11-05 — Revalidado após a mudança: health 200 (`db=ok`), smoke 32/32, unitários 49/49, estáticos 39/39. Servidor local encerrado (nada em 8788/8789).
+- 2026-11-05 — CI quebrou no passo de D1: sem `database_id` no `wrangler.toml`, `d1 execute` não resolve o nome. Criado `wrangler.test.toml` (binding `DB` + ID placeholder, uso exclusivo de teste/CI) e o workflow passou a usar `--config wrangler.test.toml`. Fluxo do CI reproduzido localmente com estado limpo: schema aplicado e smoke 32/32.
 - 2026-11-05 — Pendente (manual): conectar o repositório `lewou12/forca-caos` a um projeto Pages, criar o D1 `forca-caos-db`, aplicar `migrations/0001_init.sql` e disparar o primeiro deploy. Passos em `DEPLOY.md`.
 
 ## Riscos e mitigações

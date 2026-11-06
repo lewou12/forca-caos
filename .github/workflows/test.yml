@@ -43,7 +43,7 @@ jobs:
         run: npm run check
 
       - name: Preparar D1 local
-        run: npx wrangler d1 execute forca-caos-db --local --file=migrations/0001_init.sql --persist-to .wrangler/state
+        run: npx wrangler d1 execute DB --local --config wrangler.test.toml --file=migrations/0001_init.sql --persist-to .wrangler/state
 
       - name: Subir Pages Functions local
         run: |
