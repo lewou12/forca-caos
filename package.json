@@ -14,7 +14,7 @@
     "deploy": "wrangler pages deploy public --project-name=forca-caos"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "devDependencies": {
     "vitest": "^3.2.4",
