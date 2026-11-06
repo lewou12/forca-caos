@@ -329,3 +329,42 @@ Fluxo exercitado no navegador contra `wrangler pages dev`:
 - Actions usam tags móveis (`@v4`); pinagem por SHA fica como endurecimento futuro.
 
 **Parecer:** aprovado para deploy, com as mitigações acima.
+
+---
+
+## Sessão 7 — Fase 6: mudança de estratégia de deploy
+
+**Data:** 2026-11-05
+**Personas:** Mestre Git/Cloudflare, Engenheiro Veterano, QA
+
+### Problema
+
+O deploy via GitHub Actions dependia de um `CLOUDFLARE_API_TOKEN` utilizável pelo runner. O token disponível está restrito por IP: a API responde `Cannot use the access token from location: … [code: 9109]`. Trocar o token não é necessário — o acoplamento é que estava errado.
+
+### Decisão
+
+**O deploy passa a ser feito pela Git integration do Cloudflare Pages.** Push ou merge em `main` dispara o build dentro da Cloudflare, sem token, sem runner e sem secret no GitHub.
+
+- `.github/workflows/deploy.yml` removido; `test.yml` permanece rodando a suíte no CI.
+- `wrangler.toml` não versiona mais `database_id`; o binding `DB → forca-caos-db` é criado no dashboard do projeto Pages.
+- `DEPLOY.md` documenta: criar o D1, conectar o repositório, build `exit 0`, output `public`, binding `DB`, aplicar `migrations/0001_init.sql` e validar `/api/health`.
+- O `package.json` perdeu o script `deploy`; o fluxo oficial é `git push`.
+
+### Descoberta de ambiente
+
+`wrangler pages dev --d1` aceita apenas `BINDING=DATABASE_ID`. Passar o nome `forca-caos-db` criava um banco vazio e o health retornava 503. A correção foi usar o ID placeholder `00000000-0000-0000-0000-000000000000`, que aponta para o D1 local já populado em `.wrangler/state`.
+
+### Validação após a mudança
+
+| Verificação | Resultado |
+|---|---|
+| `/api/health` local | 200 — `{"ok":true,"db":"ok"}` |
+| `scripts/smoke.mjs` | 32/32 |
+| `npx vitest run` | 49/49 |
+| `scripts/check.mjs` | 39/39 (inclui `DEPLOY.md`, exclui `deploy.yml`) |
+
+Servidor local encerrado ao final; nada escutando em 8788/8789. **Produção não roda na máquina do usuário** — o `wrangler pages dev` é apenas o harness de teste com o mesmo runtime da Cloudflare.
+
+### Pendência manual (única)
+
+A conexão do repositório a um projeto Pages exige OAuth do GitHub no dashboard da Cloudflare. Passos em `DEPLOY.md`. Após a conexão, a verificação é `GET https://forca-caos.pages.dev/api/health` → `{"ok":true,"db":"ok"}`.

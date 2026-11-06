@@ -47,7 +47,7 @@ jobs:
 
       - name: Subir Pages Functions local
         run: |
-          npx wrangler pages dev public --port 8788 --persist-to .wrangler/state > /tmp/wrangler.log 2>&1 &
+          npx wrangler pages dev public --port 8788 --persist-to .wrangler/state --d1=DB=00000000-0000-0000-0000-000000000000 > /tmp/wrangler.log 2>&1 &
           for attempt in $(seq 1 45); do
             if curl -fsS http://127.0.0.1:8788/api/health > /dev/null 2>&1; then
               echo "Servidor pronto na tentativa ${attempt}."

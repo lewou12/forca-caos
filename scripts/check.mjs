@@ -56,6 +56,7 @@ const required = [
   'GDD.md',
   'debate_log.md',
   'estado_da_esteira.md',
+  'DEPLOY.md',
   'package.json',
   'wrangler.toml',
   'migrations/0001_init.sql',
@@ -77,7 +78,6 @@ const required = [
   'tests/security.test.js',
   'tests/race.test.js',
   '.github/workflows/test.yml',
-  '.github/workflows/deploy.yml',
 ];
 for (const path of required) {
   if (existsSync(join(root, path))) pass(`existe ${path}`);

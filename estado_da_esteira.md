@@ -2,7 +2,7 @@
 
 > Projeto: Jogo da Forca Multiplayer Competitivo com Power-Ups
 > Repositório: https://github.com/lewou12/forca-caos
-> Deploy: Cloudflare Pages + D1 (CI/CD via GitHub Actions)
+> Deploy: Cloudflare Pages + D1 (Git integration — push em `main` publica)
 
 ## Status atual
 
@@ -13,7 +13,7 @@
 | 3 — Arquitetura & Código | Engenheiro Veterano | ✅ Concluída | Frontend + Functions + D1 |
 | 4 — QA & Automação | QA Implacável | ✅ Concluída | 49 testes + smoke + workflows |
 | 5 — Segurança | Analista Paranoico | ✅ Concluída | Auditoria + patches |
-| 6 — DevOps | Mestre Git/Cloudflare | ⏳ Bloqueada (token CF) | Push + deploy Pages |
+| 6 — DevOps | Mestre Git/Cloudflare | ⏳ Conexão manual pendente | Repo no ar + `DEPLOY.md` |
 
 ## Decisões-chave
 
@@ -66,6 +66,11 @@
 - 2026-11-05 — Fase 6 em andamento: repositório, secrets e deploy.
 - 2026-11-05 — CI verde no GitHub Actions (run `42148034153`): 49/49 testes, 39/39 estáticos e 32/32 smoke, com Node 22 e D1 local.
 - 2026-11-05 — Deploy bloqueado: token `CLOUDFLARE_API_TOKEN` restrito por IP; runner do GitHub recebe `Authentication error [code: 10000]` e `Cannot use the access token from location: 20.84.158.26 [code: 9109]`. Aguardando token sem restrição de IP (permissões Pages Edit + D1 Edit).
+- 2026-11-05 — Mudança de estratégia: removido `.github/workflows/deploy.yml`. O deploy passa a ser feito pela **Git integration do Cloudflare Pages** (push/merge em `main` dispara o build na Cloudflare), eliminando o token no CI e o bloqueio por IP.
+- 2026-11-05 — `wrangler.toml` deixou de versionar `database_id`; o binding `DB → forca-caos-db` é configurado no dashboard do Pages. `DEPLOY.md` documenta o passo a passo manual.
+- 2026-11-05 — Descoberta local: `wrangler pages dev --d1` exige `BINDING=DATABASE_ID`; usar o ID placeholder `00000000-…` mantém o banco local populado. `package.json` e `test.yml` atualizados.
+- 2026-11-05 — Revalidado após a mudança: health 200 (`db=ok`), smoke 32/32, unitários 49/49, estáticos 39/39. Servidor local encerrado (nada em 8788/8789).
+- 2026-11-05 — Pendente (manual): conectar o repositório `lewou12/forca-caos` a um projeto Pages, criar o D1 `forca-caos-db`, aplicar `migrations/0001_init.sql` e disparar o primeiro deploy. Passos em `DEPLOY.md`.
 
 ## Riscos e mitigações
 
@@ -77,4 +82,5 @@
 | Dicionário pequeno | 100–149 palavras por tamanho; teste automatizado |
 | Jogador fecha o navegador | assento preservado; reconexão por token |
 | Sala órfã | TTL de 6 h + remoção quando todos saem |
-| Token CF sem permissão/IP | deploy via GitHub Actions; diagnóstico no CI |
+| Token CF sem permissão/IP | deploy pela Git integration do Pages; token não é usado no CI |
+| Conexão Pages depende do dashboard | `DEPLOY.md` com passo a passo + verificação por `/api/health` |
