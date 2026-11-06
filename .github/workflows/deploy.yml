@@ -54,22 +54,53 @@ jobs:
             exit 1
           fi
 
+      - name: Verificar acesso da credencial na API Cloudflare
+        id: cloudflare_auth
+        run: |
+          set +e
+          output="$(npx wrangler whoami 2>&1)"
+          status=$?
+          set -e
+          echo "$output"
+          if [ "$status" -eq 0 ]; then
+            echo "can_deploy=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if echo "$output" | grep -q "Cannot use the access token from location"; then
+            echo "::warning::Token Cloudflare bloqueado por restricao de origem/IP no runner GitHub; deploy remoto sera ignorado nesta execucao."
+            echo "can_deploy=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          exit "$status"
+
       - name: Garantir banco D1 e binding
+        if: steps.cloudflare_auth.outputs.can_deploy == 'true'
         run: node scripts/ensure-d1.mjs forca-caos-db
 
       - name: Aplicar migracoes no D1 remoto
+        if: steps.cloudflare_auth.outputs.can_deploy == 'true'
         run: npx wrangler d1 execute forca-caos-db --remote --file=migrations/0001_init.sql
 
       - name: Criar projeto Pages se necessario
+        if: steps.cloudflare_auth.outputs.can_deploy == 'true'
         run: npx wrangler pages project create forca-caos --production-branch=main || true
         continue-on-error: true
 
       - name: Publicar no Cloudflare Pages
+        if: steps.cloudflare_auth.outputs.can_deploy == 'true'
         run: npx wrangler pages deploy public --project-name=forca-caos --branch=main --commit-dirty=true
 
       - name: Resumo
+        if: always()
         run: |
-          echo "### Deploy concluido" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ steps.cloudflare_auth.outputs.can_deploy }}" = "true" ]; then
+            echo "### Deploy concluido" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### Deploy ignorado" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Motivo: token Cloudflare bloqueado por restricao de origem/IP no runner GitHub." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "- Projeto: forca-caos" >> "$GITHUB_STEP_SUMMARY"
           echo "- URL: https://forca-caos.pages.dev" >> "$GITHUB_STEP_SUMMARY"
