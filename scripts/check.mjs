@@ -78,6 +78,7 @@ const required = [
   'tests/security.test.js',
   'tests/race.test.js',
   '.github/workflows/test.yml',
+  '.github/workflows/deploy.yml',
 ];
 for (const path of required) {
   if (existsSync(join(root, path))) pass(`existe ${path}`);

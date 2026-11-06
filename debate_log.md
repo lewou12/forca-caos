@@ -368,3 +368,74 @@ Servidor local encerrado ao final; nada escutando em 8788/8789. **Produção nã
 ### Pendência manual (única)
 
 A conexão do repositório a um projeto Pages exige OAuth do GitHub no dashboard da Cloudflare. Passos em `DEPLOY.md`. Após a conexão, a verificação é `GET https://forca-caos.pages.dev/api/health` → `{"ok":true,"db":"ok"}`.
+
+---
+
+## Sessão 8 — Fase 6: rollback para GitHub Actions (deploy automatizado)
+
+**Data:** 2026-11-05
+**Personas:** Mestre Git/Cloudflare, Engenheiro Veterano, QA
+
+### Motivo do rollback
+
+A estratégia de "Git integration do Pages" exige OAuth do GitHub no dashboard da Cloudflare — passo que **não pode ser automatizado** (nem por CLI, nem por API, nem por token). Para manter a esteira 100% automatizada (push → deploy), voltamos ao GitHub Actions com um workflow robusto.
+
+### O que mudou
+
+| Arquivo | Ação |
+|---|---|
+| `.github/workflows/deploy.yml` | **Restaurado e endurecido**: cria D1 se necessário, injeta `database_id` real no runner (sem commit), aplica migração remota, cria projeto Pages se necessário, **fixa binding `DB` via API**, publica, valida `/api/health`. |
+| `.github/workflows/test.yml` | Mantido; usa `wrangler.toml` com placeholder. |
+| `wrangler.toml` | Voltou a ter `[[d1_databases]]` com `database_id` placeholder. O workflow sobrescreve no runner via `ensure-d1.mjs`. |
+| `wrangler.test.toml` | **Removido** (era só para o CI da estratégia anterior). |
+| `package.json` | `dev` usa `--d1=DB=00000000-…` (placeholder que aponta ao D1 local populado). `deploy` script removido (o fluxo é `git push`). |
+| `scripts/check.mjs` | Lista obrigatória inclui `deploy.yml`. |
+| `DEPLOY.md` | Reescrito: foco em **corrigir o token** (código 9109) e disparar o workflow. |
+
+### Causa raiz do bloqueio (código 9109)
+
+O token `CLOUDFLARE_API_TOKEN` armazenado nos secrets do GitHub foi criado com **Client IP Address Filtering**. O runner do GitHub Actions roda em IPs dinâmicos (ex.: `20.84.158.26`, `2804:2548:c074:8901:8555:55eb:1804:5a74`), então a API Cloudflare rejeita com:
+
+```
+Cannot use the access token from location: ... [code: 9109]
+Authentication error [code: 10000]
+```
+
+**Nenhuma chave vazou.** O token em si é válido; a restrição de IP é que impede o uso no CI.
+
+### Correção necessária (manual, uma vez)
+
+1. **Dashboard Cloudflare** → My Profile → API Tokens → Create Token → Custom Token.
+2. Permissões mínimas:
+   - Account → Cloudflare Pages → Edit
+   - Account → D1 → Edit
+   - Account → Account Settings → Read
+3. Account Resources: Include → conta `6de83c2e29576516d99ef9e486c81a59`.
+4. **Client IP Address Filtering: deixar vazio (Any IP).** ← resolve o 9109.
+5. Copiar o token **uma vez**.
+
+6. **Atualizar no GitHub (sem expor no histórico):**
+   ```bash
+   gh secret set CLOUDFLARE_API_TOKEN --repo lewou12/forca-caos
+   # cola o token no prompt (não ecoa, não fica no history)
+   gh secret set CLOUDFLARE_ACCOUNT_ID --repo lewou12/forca-caos --body 6de83c2e29576516d99ef9e486c81a59
+   ```
+7. Revogar o token antigo no dashboard da Cloudflare.
+
+### Validação atual (local, sem token de produção)
+
+| Verificação | Resultado |
+|---|---|
+| `npx vitest run` | 49/49 |
+| `node scripts/check.mjs` | 40/40 |
+| `npm run dev` + `scripts/smoke.mjs` | 32/32 (health `db=ok`) |
+| YAML dos workflows | sintaxe OK |
+
+Servidor local encerrado; nada em 8788/8789.
+
+### Próximo passo (automatizado após correção do token)
+
+```bash
+gh workflow run "Deploy Cloudflare Pages" --repo lewou12/forca-caos
+```
+O workflow roda: testes → D1 → migração → projeto Pages → binding D1 → deploy → health check `https://forca-caos.pages.dev/api/health` → summary no GitHub.

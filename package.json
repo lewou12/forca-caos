@@ -5,12 +5,13 @@
   "type": "module",
   "description": "Jogo da Forca multiplayer competitivo com power-ups, em Cloudflare Pages + D1.",
   "scripts": {
-    "dev": "wrangler pages dev public --port 8788 --persist-to .wrangler/state --d1=DB=00000000-0000-0000-0000-000000000000",
+    "dev": "wrangler pages dev public --port 8788 --persist-to .wrangler/state",
     "db:local": "wrangler d1 execute forca-caos-db --local --file=migrations/0001_init.sql --persist-to .wrangler/state",
     "test": "vitest run",
     "test:watch": "vitest",
     "check": "node scripts/check.mjs",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "deploy": "wrangler pages deploy public --project-name=forca-caos"
   },
   "engines": {
     "node": ">=22"

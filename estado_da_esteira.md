@@ -2,7 +2,7 @@
 
 > Projeto: Jogo da Forca Multiplayer Competitivo com Power-Ups
 > Repositório: https://github.com/lewou12/forca-caos
-> Deploy: Cloudflare Pages + D1 (Git integration — push em `main` publica)
+> Deploy: Cloudflare Pages + D1 (GitHub Actions — push em `main` publica via workflow)
 
 ## Status atual
 
@@ -13,7 +13,7 @@
 | 3 — Arquitetura & Código | Engenheiro Veterano | ✅ Concluída | Frontend + Functions + D1 |
 | 4 — QA & Automação | QA Implacável | ✅ Concluída | 49 testes + smoke + workflows |
 | 5 — Segurança | Analista Paranoico | ✅ Concluída | Auditoria + patches |
-| 6 — DevOps | Mestre Git/Cloudflare | ⏳ Conexão manual pendente | Repo no ar + `DEPLOY.md` |
+| 6 — DevOps | Mestre Git/Cloudflare | ⏳ Aguardando token CF válido | Deploy.yml pronto; secrets a corrigir |
 
 ## Decisões-chave
 
@@ -71,7 +71,9 @@
 - 2026-11-05 — Descoberta local: `wrangler pages dev --d1` exige `BINDING=DATABASE_ID`; usar o ID placeholder `00000000-…` mantém o banco local populado. `package.json` e `test.yml` atualizados.
 - 2026-11-05 — Revalidado após a mudança: health 200 (`db=ok`), smoke 32/32, unitários 49/49, estáticos 39/39. Servidor local encerrado (nada em 8788/8789).
 - 2026-11-05 — CI quebrou no passo de D1: sem `database_id` no `wrangler.toml`, `d1 execute` não resolve o nome. Criado `wrangler.test.toml` (binding `DB` + ID placeholder, uso exclusivo de teste/CI) e o workflow passou a usar `--config wrangler.test.toml`. Fluxo do CI reproduzido localmente com estado limpo: schema aplicado e smoke 32/32.
-- 2026-11-05 — Pendente (manual): conectar o repositório `lewou12/forca-caos` a um projeto Pages, criar o D1 `forca-caos-db`, aplicar `migrations/0001_init.sql` e disparar o primeiro deploy. Passos em `DEPLOY.md`.
+- 2026-11-05 — Rollback de estratégia: **restaurado `.github/workflows/deploy.yml`** (GitHub Actions) com melhorias: binding D1 fixado via API, health check de produção, validação de secrets. `wrangler.toml` voltou a ter `database_id` placeholder (o workflow injeta o real no runner). `wrangler.test.toml` removido. CI local: 49/49, 32/32, 40/40.
+- 2026-11-05 — Causa raiz do bloqueio: token `CLOUDFLARE_API_TOKEN` com **Client IP Address Filtering** (código 9109). O runner do GitHub usa IP dinâmico; o token precisa ser recriado **sem filtro de IP** (passo 1 do `DEPLOY.md`).
+- 2026-11-05 — Pendente (manual, único): no GitHub, substituir `CLOUDFLARE_API_TOKEN` por token novo sem restrição de IP (permissões: Account → Pages Edit, D1 Edit, Account Settings Read). Depois: `gh workflow run "Deploy Cloudflare Pages"` ou push na `main`.
 
 ## Riscos e mitigações
 
@@ -83,5 +85,5 @@
 | Dicionário pequeno | 100–149 palavras por tamanho; teste automatizado |
 | Jogador fecha o navegador | assento preservado; reconexão por token |
 | Sala órfã | TTL de 6 h + remoção quando todos saem |
-| Token CF sem permissão/IP | deploy pela Git integration do Pages; token não é usado no CI |
-| Conexão Pages depende do dashboard | `DEPLOY.md` com passo a passo + verificação por `/api/health` |
+| Token CF com filtro de IP (código 9109) | recriar token sem filtro; `DEPLOY.md` tem passo a passo seguro |
+| Permissão faltando no token | escopo mínimo: Pages Edit, D1 Edit, Account Settings Read |

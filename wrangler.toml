@@ -2,8 +2,9 @@ name = "forca-caos"
 compatibility_date = "2025-04-01"
 pages_build_output_dir = "public"
 
-# O deploy de producao e feito pela integracao Git do Cloudflare Pages
-# (merge/push na branch main). O binding D1 "DB" e configurado no dashboard
-# do Pages em Settings > Bindings > D1 database bindings, apontando para o
-# banco "forca-caos-db". Para desenvolvimento local usamos a flag --d1 no
-# script `npm run dev`, portanto nenhum database_id fica versionado aqui.
+# O database_id é substituído no CI (scripts/ensure-d1.mjs) após a criação/consulta
+# do banco remoto. Para desenvolvimento local, qualquer UUID válido funciona.
+[[d1_databases]]
+binding = "DB"
+database_name = "forca-caos-db"
+database_id = "00000000-0000-0000-0000-000000000000"
