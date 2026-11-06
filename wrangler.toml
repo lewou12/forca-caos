@@ -1,0 +1,10 @@
+name = "forca-caos"
+compatibility_date = "2025-04-01"
+pages_build_output_dir = "public"
+
+# O database_id é substituído no CI (scripts/ensure-d1.mjs) após a criação/consulta
+# do banco remoto. Para desenvolvimento local, qualquer UUID válido funciona.
+[[d1_databases]]
+binding = "DB"
+database_name = "forca-caos-db"
+database_id = "00000000-0000-0000-0000-000000000000"

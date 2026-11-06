@@ -1,0 +1,67 @@
+name: Testes
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: testes-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Unitarios, estaticos e smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      CI: 'true'
+      WRANGLER_SEND_METRICS: 'false'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Testes unitarios, de seguranca e de corrida
+        run: npm test
+
+      - name: Verificacoes estaticas
+        run: npm run check
+
+      - name: Preparar D1 local
+        run: npx wrangler d1 execute forca-caos-db --local --file=migrations/0001_init.sql --persist-to .wrangler/state
+
+      - name: Subir Pages Functions local
+        run: |
+          npx wrangler pages dev public --port 8788 --persist-to .wrangler/state > /tmp/wrangler.log 2>&1 &
+          for attempt in $(seq 1 45); do
+            if curl -fsS http://127.0.0.1:8788/api/health > /dev/null 2>&1; then
+              echo "Servidor pronto na tentativa ${attempt}."
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Servidor nao respondeu. Log:"
+          cat /tmp/wrangler.log
+          exit 1
+
+      - name: Smoke test ponta a ponta
+        run: BASE_URL=http://127.0.0.1:8788 npm run smoke
+
+      - name: Log do servidor em caso de falha
+        if: failure()
+        run: cat /tmp/wrangler.log || true

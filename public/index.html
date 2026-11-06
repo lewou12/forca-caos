@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b0a14" />
+    <meta
+      name="description"
+      content="Jogo da Forca multiplayer competitivo com power-ups. 2 a 6 jogadores, palavras secretas diferentes e ataques em tempo real."
+    />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+    <title>Forca Caos — Forca multiplayer com power-ups</title>
+  </head>
+  <body>
+    <div class="bg-glow" aria-hidden="true"></div>
+
+    <header class="topbar">
+      <a class="brand" href="/" id="brand-link">
+        <span class="brand-mark" aria-hidden="true">F</span>
+        <span class="brand-text">Forca <strong>Caos</strong></span>
+      </a>
+      <div class="topbar-actions">
+        <button class="icon-btn" id="sound-toggle" type="button" aria-pressed="true" title="Ligar/desligar som">
+          <span aria-hidden="true" id="sound-icon">♪</span>
+          <span class="sr-only">Alternar som</span>
+        </button>
+        <button class="icon-btn" id="leave-btn" type="button" hidden title="Sair da sala">
+          <span aria-hidden="true">⏻</span>
+          <span class="sr-only">Sair da sala</span>
+        </button>
+      </div>
+    </header>
+
+    <main id="app">
+      <!-- ================= HOME ================= -->
+      <section class="screen" id="screen-home" aria-labelledby="home-title">
+        <div class="hero">
+          <p class="eyebrow">Multiplayer competitivo · 2 a 6 jogadores</p>
+          <h1 id="home-title">A forca clássica<br /><span class="accent">virou caos.</span></h1>
+          <p class="hero-sub">
+            Cada jogador recebe uma palavra secreta do mesmo tamanho. Revele a sua, observe
+            os adversários e use power-ups para atrapalhar quem está na frente.
+          </p>
+        </div>
+
+        <div class="home-grid">
+          <form class="panel" id="create-form" novalidate>
+            <h2>Criar sala</h2>
+            <label class="field">
+              <span>Seu nome</span>
+              <input
+                id="create-name"
+                name="name"
+                type="text"
+                maxlength="16"
+                minlength="2"
+                autocomplete="nickname"
+                placeholder="Ex.: Ana"
+                required
+              />
+            </label>
+            <label class="field">
+              <span>Tamanho da palavra</span>
+              <select id="create-length" name="wordLength">
+                <option value="5">5 letras</option>
+                <option value="6" selected>6 letras</option>
+                <option value="7">7 letras</option>
+                <option value="8">8 letras</option>
+              </select>
+            </label>
+            <button class="btn btn-primary btn-block" type="submit" id="create-submit">
+              Criar sala
+            </button>
+            <p class="fineprint">Você será o host e poderá iniciar a partida.</p>
+          </form>
+
+          <form class="panel" id="join-form" novalidate>
+            <h2>Entrar em sala</h2>
+            <label class="field">
+              <span>Seu nome</span>
+              <input
+                id="join-name"
+                name="name"
+                type="text"
+                maxlength="16"
+                minlength="2"
+                autocomplete="nickname"
+                placeholder="Ex.: Bia"
+                required
+              />
+            </label>
+            <label class="field">
+              <span>Código da sala</span>
+              <input
+                id="join-code"
+                name="code"
+                type="text"
+                inputmode="text"
+                maxlength="5"
+                placeholder="ABC12"
+                autocapitalize="characters"
+                autocomplete="off"
+                spellcheck="false"
+                required
+              />
+            </label>
+            <button class="btn btn-ghost btn-block" type="submit" id="join-submit">
+              Entrar
+            </button>
+            <p class="fineprint" id="session-hint" hidden>
+              Você tem uma sessão salva.
+              <button class="link-btn" type="button" id="resume-btn">Retomar sala</button>
+            </p>
+          </form>
+        </div>
+
+        <div class="panel rules">
+          <h2>Como funciona</h2>
+          <ul class="rule-list">
+            <li><strong>Palavras assimétricas.</strong> Todos têm o mesmo número de letras, mas cada um resolve a própria palavra.</li>
+            <li><strong>Panorama ao vivo.</strong> Veja a forca e as letras reveladas de cada adversário.</li>
+            <li><strong>Caos controlado.</strong> 11 power-ups: ataque, defesa, sorte e sabotagem. Tudo validado no servidor.</li>
+            <li><strong>3 rodadas de 90s.</strong> 6 erros eliminam. Pontos de colocação: 30 / 20 / 10.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- ================= LOBBY ================= -->
+      <section class="screen" id="screen-lobby" aria-labelledby="lobby-title" hidden>
+        <div class="lobby-head">
+          <div>
+            <p class="eyebrow">Sala criada</p>
+            <h1 id="lobby-title">Aguardando jogadores</h1>
+          </div>
+          <div class="code-box">
+            <span class="code-label">Código</span>
+            <button class="code-value" id="copy-code" type="button" title="Copiar código">·····</button>
+          </div>
+        </div>
+
+        <div class="lobby-grid">
+          <div class="panel">
+            <div class="panel-head">
+              <h2>Jogadores <span class="count" id="lobby-count">1/6</span></h2>
+              <button class="link-btn" id="copy-link" type="button">Copiar convite</button>
+            </div>
+            <ul class="player-list" id="lobby-players"></ul>
+            <div class="lobby-config" id="lobby-config"></div>
+          </div>
+
+          <div class="panel lobby-start">
+            <h2>Pronto?</h2>
+            <p class="muted" id="lobby-hint">
+              Compartilhe o código. A partida começa quando o host quiser, com pelo menos 2 jogadores.
+            </p>
+            <button class="btn btn-primary btn-block" id="start-btn" type="button" hidden>
+              Iniciar partida
+            </button>
+            <p class="waiting" id="lobby-waiting">
+              <span class="pulse" aria-hidden="true"></span> O host vai iniciar a partida
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= GAME ================= -->
+      <section class="screen game" id="screen-game" aria-labelledby="game-title" hidden>
+        <h1 class="sr-only" id="game-title">Partida em andamento</h1>
+
+        <div class="game-status">
+          <div class="status-chip">
+            <span class="status-label">Rodada</span>
+            <strong id="round-label">1/3</strong>
+          </div>
+          <div class="status-chip timer-chip">
+            <span class="status-label">Tempo</span>
+            <strong id="timer-label">90s</strong>
+          </div>
+          <div class="status-chip">
+            <span class="status-label">Sua pontuação</span>
+            <strong id="score-label">0</strong>
+          </div>
+          <button class="icon-btn mobile-pano-btn" id="pano-toggle" type="button" aria-expanded="false">
+            <span aria-hidden="true">◫</span>
+            <span class="sr-only">Alternar panorama</span>
+          </button>
+        </div>
+
+        <div class="game-grid">
+          <div class="play-column">
+            <div class="panel own-card" id="own-card">
+              <div class="own-top">
+                <div>
+                  <p class="eyebrow" id="own-name">Você</p>
+                  <p class="muted small" id="own-status">Sua vez de chutar</p>
+                </div>
+                <div class="own-badges" id="own-badges"></div>
+              </div>
+
+              <div class="gallows-wrap" id="own-gallows" aria-hidden="true"></div>
+
+              <div class="word-mask" id="own-mask" aria-label="Sua palavra"></div>
+              <p class="wrong-counter" id="own-wrong">0 / 6 erros</p>
+
+              <div class="effect-banner" id="own-effects" hidden></div>
+              <div class="blind-overlay" id="blind-overlay" hidden>
+                <p>Cegueira!</p>
+                <span>Aguarde a tela voltar.</span>
+              </div>
+              <div class="ink-overlay" id="ink-overlay" hidden aria-hidden="true"></div>
+            </div>
+
+            <div class="panel keyboard-panel">
+              <div class="keyboard" id="keyboard" role="group" aria-label="Teclado de letras"></div>
+              <p class="fineprint center" id="keyboard-hint">Clique em uma letra ou use o teclado físico.</p>
+            </div>
+
+            <div class="panel tray-panel">
+              <div class="panel-head">
+                <h2>Seus power-ups</h2>
+                <span class="muted small" id="tray-count">0 cargas</span>
+              </div>
+              <div class="tray" id="powerup-tray"></div>
+              <p class="fineprint" id="tray-hint">
+                Ganhe cargas a cada 3 acertos seguidos, ao resolver a palavra e a cada 30s.
+              </p>
+            </div>
+          </div>
+
+          <aside class="panel panorama" id="panorama" aria-labelledby="pano-title">
+            <div class="panel-head">
+              <h2 id="pano-title">Panorama</h2>
+              <span class="muted small" id="pano-count">—</span>
+            </div>
+            <div class="pano-grid" id="pano-grid"></div>
+            <div class="log-panel">
+              <h3>Acontecimentos</h3>
+              <ul class="event-log" id="event-log"></ul>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ================= ROUND OVER ================= -->
+      <section class="screen" id="screen-round" aria-labelledby="round-title" hidden>
+        <div class="result-head">
+          <p class="eyebrow" id="round-reason">Rodada encerrada</p>
+          <h1 id="round-title">Resultado da rodada</h1>
+          <p class="muted" id="round-winner"></p>
+        </div>
+        <div class="panel">
+          <ol class="standings" id="round-standings"></ol>
+        </div>
+        <div class="panel">
+          <h2>Palavras da rodada</h2>
+          <ul class="word-reveal" id="round-words"></ul>
+        </div>
+        <p class="next-round" id="next-round-label">Próxima rodada em instantes…</p>
+      </section>
+
+      <!-- ================= FINISHED ================= -->
+      <section class="screen" id="screen-finished" aria-labelledby="finished-title" hidden>
+        <div class="result-head">
+          <p class="eyebrow">Fim da partida</p>
+          <h1 id="finished-title">Temos um campeão</h1>
+          <p class="muted" id="finished-winner"></p>
+        </div>
+        <div class="podium" id="podium"></div>
+        <div class="panel">
+          <h2>Classificação final</h2>
+          <ol class="standings" id="final-standings"></ol>
+        </div>
+        <div class="panel">
+          <h2>Todas as palavras</h2>
+          <ul class="word-reveal" id="final-words"></ul>
+        </div>
+        <div class="result-actions">
+          <button class="btn btn-primary" id="rematch-btn" type="button">Jogar de novo</button>
+          <button class="btn btn-ghost" id="home-btn" type="button">Voltar ao início</button>
+        </div>
+      </section>
+
+      <!-- ================= LOADING / ERROR ================= -->
+      <section class="screen" id="screen-loading" aria-live="polite" hidden>
+        <div class="loading-card">
+          <div class="spinner" aria-hidden="true"></div>
+          <p id="loading-text">Conectando…</p>
+        </div>
+      </section>
+    </main>
+
+    <!-- ================= TARGET PICKER ================= -->
+    <div class="modal" id="target-modal" hidden>
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="target-title">
+        <div class="modal-head">
+          <h2 id="target-title">Escolha o alvo</h2>
+          <button class="icon-btn" id="target-cancel" type="button" aria-label="Cancelar">✕</button>
+        </div>
+        <p class="muted small" id="target-desc">Selecione um adversário para este power-up.</p>
+        <div class="target-list" id="target-list"></div>
+      </div>
+    </div>
+
+    <!-- ================= TOASTS ================= -->
+    <div class="toasts" id="toasts" aria-live="polite" aria-atomic="false"></div>
+
+    <template id="template-player-chip">
+      <li class="player-chip">
+        <span class="chip-color" aria-hidden="true"></span>
+        <span class="chip-name"></span>
+        <span class="chip-tag"></span>
+      </li>
+    </template>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
